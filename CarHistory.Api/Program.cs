@@ -10,12 +10,10 @@ using System.Text.Json;
 
 var builder = FunctionsApplication.CreateBuilder(args);
 
-// Configuration sources
 builder.Configuration
     .AddUserSecrets<Program>(optional: true)
     .AddEnvironmentVariables();
 
-// Force camelCase JSON for Functions isolated (affects ReadFromJsonAsync + WriteAsJsonAsync)
 builder.Services.Configure<WorkerOptions>(o =>
 {
     o.Serializer = new JsonObjectSerializer(new JsonSerializerOptions
@@ -25,7 +23,6 @@ builder.Services.Configure<WorkerOptions>(o =>
     });
 });
 
-// EF Core + Postgres
 builder.Services.AddDbContext<AppDbContext>(options =>
 {
     var cs = builder.Configuration.GetConnectionString("Default")
