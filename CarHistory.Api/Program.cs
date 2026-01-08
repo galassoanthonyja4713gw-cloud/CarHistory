@@ -10,10 +10,16 @@ using System.Text.Json;
 
 var builder = FunctionsApplication.CreateBuilder(args);
 
+// Configuration sources
 builder.Configuration
-    .AddUserSecrets<Program>(optional: true)
     .AddEnvironmentVariables();
 
+if (builder.Environment.IsDevelopment())
+{
+    builder.Configuration.AddUserSecrets<Program>(optional: true);
+}
+
+// JSON serialization
 builder.Services.Configure<WorkerOptions>(o =>
 {
     o.Serializer = new JsonObjectSerializer(new JsonSerializerOptions
@@ -23,13 +29,23 @@ builder.Services.Configure<WorkerOptions>(o =>
     });
 });
 
+// Database
 builder.Services.AddDbContext<AppDbContext>(options =>
 {
-    var cs = builder.Configuration.GetConnectionString("Default")
-             ?? throw new InvalidOperationException("Missing ConnectionStrings:Default");
+    var cs =
+        builder.Configuration.GetConnectionString("Default") ??
+        builder.Configuration["ConnectionStrings:Default"] ??
+        builder.Configuration["ConnectionStrings__Default"] ??
+        Environment.GetEnvironmentVariable("ConnectionStrings__Default");
+
+    if (string.IsNullOrWhiteSpace(cs))
+        throw new InvalidOperationException(
+            "Missing DB connection string. Set ConnectionStrings__Default in Azure Static Web App environment variables.");
+
     options.UseNpgsql(cs);
 });
 
+// Azure Functions web pipeline
 builder.ConfigureFunctionsWebApplication();
 
 var app = builder.Build();
