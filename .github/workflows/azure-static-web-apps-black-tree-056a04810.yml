@@ -2,28 +2,27 @@ name: Azure Static Web Apps CI/CD
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
   pull_request:
     types: [opened, synchronize, reopened, closed]
-    branches:
-      - main
+    branches: [main]
 
 jobs:
   build_and_deploy_job:
-    if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.action != 'closed')
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
 
       - name: Build React app
         working-directory: app
         run: |
           npm ci
           npm run build
-
-      - name: Publish Functions API
-        run: dotnet publish CarHistory.Api/CarHistory.Api.csproj -c Release -o CarHistory.Api/publish
 
       - name: Build And Deploy
         uses: Azure/static-web-apps-deploy@v1
@@ -32,19 +31,11 @@ jobs:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           action: "upload"
 
+          # Frontend
           app_location: "app"
           output_location: "dist"
           skip_app_build: true
 
-          api_location: "CarHistory.Api/publish"
-          skip_api_build: true
-
-  close_pull_request_job:
-    if: github.event_name == 'pull_request' && github.event.action == 'closed'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Close Pull Request
-        uses: Azure/static-web-apps-deploy@v1
-        with:
-          azure_static_web_apps_api_token: ${{ secrets.SWA_DEPLOY_TOKEN }}
-          action: "close"
+          # Functions (IMPORTANT: point to source folder, not publish output)
+          api_location: "CarHistory.Api"
+          # do NOT set skip_api_build: true
