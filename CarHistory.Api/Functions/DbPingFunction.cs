@@ -1,23 +1,34 @@
 ﻿using CarHistory.Api.Data;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.EntityFrameworkCore;
-
-namespace CarHistory.Api.Functions;
+using System.Net;
 
 public class DbPingFunction
 {
     private readonly AppDbContext _db;
+
     public DbPingFunction(AppDbContext db) => _db = db;
 
-    [Function("DbPing")]
-    public async Task<IActionResult> Run(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "dbping")] HttpRequestData req)
+    [Function("db-ping")]
+    public async Task<HttpResponseData> Run(
+        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "db-ping")] HttpRequestData req)
     {
-        var canConnect = await _db.Database.CanConnectAsync();
-        var count = canConnect ? await _db.CarEntries.CountAsync() : -1;
+        try
+        {
+            // simplest possible DB touch
+            await _db.Database.OpenConnectionAsync();
+            await _db.Database.CloseConnectionAsync();
 
-        return new OkObjectResult(new { canConnect, carEntries = count });
+            var ok = req.CreateResponse(HttpStatusCode.OK);
+            ok.WriteString("db ok");
+            return ok;
+        }
+        catch (Exception ex)
+        {
+            var fail = req.CreateResponse(HttpStatusCode.InternalServerError);
+            fail.WriteString(ex.ToString()); // TEMP: remove after debugging
+            return fail;
+        }
     }
 }
