@@ -11,20 +11,19 @@ on:
 
 jobs:
   build_and_deploy_job:
+    if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.action != 'closed')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
 
-      # Build React (optional; SWA can build it, but explicit is more deterministic)
       - name: Build React app
         working-directory: app
         run: |
           npm ci
           npm run build
 
-      # Publish Azure Functions (THIS is the key fix)
       - name: Publish Functions API
-        run: dotnet publish CarHistory.Api/CarHistory.Api.csproj -c Release -o api-publish
+        run: dotnet publish CarHistory.Api/CarHistory.Api.csproj -c Release -o CarHistory.Api/publish
 
       - name: Build And Deploy
         uses: Azure/static-web-apps-deploy@v1
@@ -33,27 +32,19 @@ jobs:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           action: "upload"
 
-          # Frontend
           app_location: "app"
           output_location: "dist"
           skip_app_build: true
 
-          # API (use the published output)
-          api_location: "api-publish"
+          api_location: "CarHistory.Api/publish"
           skip_api_build: true
-
 
   close_pull_request_job:
     if: github.event_name == 'pull_request' && github.event.action == 'closed'
     runs-on: ubuntu-latest
-    name: Close Pull Request Job
     steps:
       - name: Close Pull Request
-        id: closepullrequest
         uses: Azure/static-web-apps-deploy@v1
         with:
-          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_BLACK_TREE_056A04810 }}
+          azure_static_web_apps_api_token: ${{ secrets.SWA_DEPLOY_TOKEN }}
           action: "close"
-
-
-
