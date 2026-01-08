@@ -4,25 +4,12 @@ using System.Net;
 
 public class DbPingFunction
 {
-    [Function("DbPing")]
+    [Function("Ping")]
     public HttpResponseData Run(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "db-ping")] HttpRequestData req)
+        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "ping")] HttpRequestData req)
     {
-        var res = req.CreateResponse(System.Net.HttpStatusCode.OK);
-        res.WriteString("function alive");
+        var res = req.CreateResponse(HttpStatusCode.OK);
+        res.WriteString("pong");
         return res;
-    }
-
-    public class PingFunction
-    {
-        [Function("Ping")]
-        public HttpResponseData Run(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "ping")] HttpRequestData req)
-        {
-            var res = req.CreateResponse(HttpStatusCode.OK);
-            res.Headers.Add("content-type", "text/plain; charset=utf-8");
-            res.WriteString("pong-2026-01-08");
-            return res;
-        }
     }
 }
