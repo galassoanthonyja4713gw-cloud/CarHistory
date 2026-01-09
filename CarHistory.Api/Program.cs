@@ -10,6 +10,7 @@ using System.Text.Json;
 
 var builder = FunctionsApplication.CreateBuilder(args);
 
+
 // Configuration sources
 builder.Configuration
     .AddUserSecrets<Program>(optional: true)
